@@ -1,8 +1,7 @@
+from database import engine
 from fastapi import FastAPI
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
-
-from .database import engine
 
 app = FastAPI()
 
