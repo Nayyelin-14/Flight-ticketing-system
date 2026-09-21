@@ -12,6 +12,8 @@ class User(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     email: str = Field(max_length=255)
     password_hash: str = Field(max_length=255)
+    is_verified: bool = Field(default=False, nullable=False)
+    verification_token: str | None = Field(default=None, max_length=64, nullable=True)
     created_at: datetime = Field(
         sa_column=Column(
             DateTime(timezone=True), nullable=False, server_default=func.now()

@@ -27,7 +27,8 @@ def register(user_in: UserCreate, db: DbSession) -> User:
         )
 
     try:
-        return create_user(db, user_in)
+        new_user = create_user(db, user_in)
+        return new_user
     except IntegrityError:
         db.rollback()
         raise HTTPException(

@@ -5,10 +5,12 @@ from database import Base
 from dependencies import get_db
 from fastapi.testclient import TestClient
 from main import app
+from models.outbox import JobStatus, JobType, OutboxJob
+from models.users import User
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 engine = create_engine(
     "sqlite://",
@@ -61,6 +63,53 @@ def test_register_rejects_duplicate_email(client: TestClient):
     second = client.post("/users/register/", json=payload)
     assert second.status_code == 409
 
+    with TestingSessionLocal() as db:
+        jobs = db.exec(select(OutboxJob)).all()
+        assert len(jobs) == 1
+
+
+def test_register_creates_pending_welcome_outbox_job(client: TestClient):
+    res = client.post(
+        "/users/register/",
+        json={"email": "job@example.com", "password": "password123"},
+    )
+    assert res.status_code == 201
+
+    with TestingSessionLocal() as db:
+        job = db.exec(select(OutboxJob)).one()
+    assert job.job_type == JobType.WELCOME_EMAIL
+    assert job.status == JobStatus.PENDING
+    assert job.attempts == 0
+    assert job.payload["recipient"] == "job@example.com"
+    assert uuid.UUID(job.payload["user_id"])
+    assert "verification_token" in job.payload
+    assert len(job.payload["verification_token"]) > 0
+
+
+def test_register_rolls_back_user_when_outbox_fails(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+):
+    import crud.outbox as outbox_module
+
+    def boom(db, job_type, payload):
+        raise RuntimeError("outbox unavailable")
+
+    monkeypatch.setattr(outbox_module, "create_outbox_job", boom)
+
+    with TestClient(app, raise_server_exceptions=False) as c:
+        res = c.post(
+            "/users/register/",
+            json={"email": "rollback@example.com", "password": "password123"},
+        )
+    assert res.status_code == 500
+
+    with TestingSessionLocal() as db:
+        assert (
+            db.exec(select(User).where(User.email == "rollback@example.com")).first()
+            is None
+        )
+        assert db.exec(select(OutboxJob)).all() == []
+
 
 def test_register_normalizes_email_to_lowercase(client: TestClient):
     res = client.post(
@@ -85,3 +134,93 @@ def test_register_rejects_invalid_email(client: TestClient):
         json={"email": "not-an-email", "password": "password123"},
     )
     assert res.status_code == 422
+
+
+# --- Email verification tests ---
+
+
+def test_register_creates_unverified_user(client: TestClient):
+    res = client.post(
+        "/users/register/",
+        json={"email": "unverified@example.com", "password": "password123"},
+    )
+    assert res.status_code == 201
+    with TestingSessionLocal() as db:
+        user = db.exec(select(User).where(User.email == "unverified@example.com")).one()
+    assert user.is_verified is False
+    assert user.verification_token is not None
+    assert len(user.verification_token) > 0
+
+
+def test_verify_email_with_valid_token(client: TestClient):
+    client.post(
+        "/users/register/",
+        json={"email": "verify@example.com", "password": "password123"},
+    )
+    with TestingSessionLocal() as db:
+        user = db.exec(select(User).where(User.email == "verify@example.com")).one()
+        token = user.verification_token
+
+    res = client.post("/auth/verify-email", json={"token": token})
+    assert res.status_code == 200
+    assert res.json()["message"] == "Email verified successfully"
+
+    with TestingSessionLocal() as db:
+        user = db.exec(select(User).where(User.email == "verify@example.com")).one()
+    assert user.is_verified is True
+    assert user.verification_token is None
+
+
+def test_verify_email_with_invalid_token(client: TestClient):
+    res = client.post("/auth/verify-email", json={"token": "nonexistent-token"})
+    assert res.status_code == 400
+    assert res.json()["detail"]["code"] == "INVALID_TOKEN"
+
+
+def test_verify_email_with_already_used_token(client: TestClient):
+    client.post(
+        "/users/register/",
+        json={"email": "reused@example.com", "password": "password123"},
+    )
+    with TestingSessionLocal() as db:
+        user = db.exec(select(User).where(User.email == "reused@example.com")).one()
+        token = user.verification_token
+
+    first = client.post("/auth/verify-email", json={"token": token})
+    assert first.status_code == 200
+
+    second = client.post("/auth/verify-email", json={"token": token})
+    assert second.status_code == 400
+    assert second.json()["detail"]["code"] == "INVALID_TOKEN"
+
+
+def test_verify_already_verified_user_returns_400(client: TestClient):
+    client.post(
+        "/users/register/",
+        json={"email": "already@example.com", "password": "password123"},
+    )
+    with TestingSessionLocal() as db:
+        user = db.exec(select(User).where(User.email == "already@example.com")).one()
+        token = user.verification_token
+
+    first = client.post("/auth/verify-email", json={"token": token})
+    assert first.status_code == 200
+
+    second = client.post("/auth/verify-email", json={"token": token})
+    assert second.status_code == 400
+    assert second.json()["detail"]["code"] == "INVALID_TOKEN"
+
+
+def test_user_without_verification_token_cannot_verify(client: TestClient):
+    with TestingSessionLocal() as db:
+        user = User(
+            email="notoken@example.com",
+            password_hash="fakehash",
+            is_verified=False,
+            verification_token=None,
+        )
+        db.add(user)
+        db.commit()
+
+    res = client.post("/auth/verify-email", json={"token": "some-token"})
+    assert res.status_code == 400

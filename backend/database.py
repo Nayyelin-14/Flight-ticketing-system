@@ -21,3 +21,7 @@ SessionLocal = sessionmaker(
 )
 
 Base = SQLModel
+# Engine = DB connection manager
+# SessionLocal = DB session factory
+
+# ပြီးတော့ engine က database ကို "ဘယ်လိုချိတ်မလဲ", SessionLocal က "ချိတ်ပြီးရင် database နဲ့ အလုပ်လုပ်မယ့် session ကို ဘယ်လိုဖန်တီးမလဲ" ဆိုတာပါ။
