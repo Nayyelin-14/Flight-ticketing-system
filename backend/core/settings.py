@@ -36,6 +36,7 @@ class Settings(BaseSettings):
     kafka_sasl_mechanism: str = "PLAIN"
     kafka_sasl_username: str = ""
     kafka_sasl_password: str = ""
+    kafka_ssl_cafile: str | None = None
     kafka_consumer_group: str = "notification-workers"
     kafka_source: str = "flight-api"
     kafka_provision_topics: bool = True

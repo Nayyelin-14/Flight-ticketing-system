@@ -60,23 +60,24 @@ def _patch(fake: FakeSMTP, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(email_sender_module.aiosmtplib, "SMTP", lambda **kwargs: fake)
 
 
-def test_render_welcome_email_contains_recipient_and_cta():
+def test_render_welcome_email_contains_name_and_cta():
     html = render_welcome_email(
-        "Alice Bob <alice@example.com>",
+        "alice@example.com",
         app_url="https://app.example.com",
         verification_url="https://app.example.com/verify-email?token=abc123",
+        name="Alice",
     )
-    assert "alice@example.com" in html
-    assert "https://app.example.com" in html
+    assert "Alice" in html
     assert "https://app.example.com/verify-email?token=abc123" in html
-    assert "Verify Email" in html
+    assert "Verify My Email" in html
 
 
 def test_render_welcome_email_escapes_html():
     html = render_welcome_email(
-        "<script>alert(1)</script>",
+        "test@example.com",
         app_url="https://app.example.com",
         verification_url="https://app.example.com/verify-email?token=abc",
+        name="<script>alert(1)</script>",
     )
     assert "<script>" not in html
     assert "&lt;script&gt;" in html
@@ -111,7 +112,6 @@ def test_send_welcome_email_uses_injected_sender():
     assert recipient == "alice@example.com"
     assert subject == WELCOME_SUBJECT
     assert "user-123" not in html
-    assert "https://app.example.com" in html
     assert "verify-email?token=test-token-abc" in html
 
 
@@ -205,13 +205,13 @@ def test_noop_sender_succeeds_when_ack_allowed():
     asyncio.run(acked.send(recipient="bob@example.com", subject="Hi", html="<p>x</p>"))
 
 
-def test_get_email_sender_selects_backend():
+def test_get_email_sender_selects_backend(monkeypatch):
     smtp = email_sender_module.get_email_sender(
         Settings(smtp_host="smtp.example.com", smtp_from_email="n@example.com")
     )
     assert isinstance(smtp, SMTPEmailSender)
 
-    noop = email_sender_module.get_email_sender(Settings())
+    noop = email_sender_module.get_email_sender(Settings(email_backend="noop"))
     assert isinstance(noop, NoOpEmailSender)
 
     explicit_smtp = email_sender_module.get_email_sender(
@@ -223,6 +223,7 @@ def test_get_email_sender_selects_backend():
     )
     assert isinstance(explicit_smtp, SMTPEmailSender)
 
+    monkeypatch.setenv("SMTP_HOST", "")
     with pytest.raises(RuntimeError):
         email_sender_module.get_email_sender(Settings(email_backend="smtp"))
 

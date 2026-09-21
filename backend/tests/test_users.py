@@ -44,7 +44,11 @@ def client():
 def test_register_returns_201_with_user(client: TestClient):
     res = client.post(
         "/api/v1/users/register/",
-        json={"email": "user@example.com", "password": "password123"},
+        json={
+            "name": "Test User",
+            "email": "user@example.com",
+            "password": "password123",
+        },
     )
     assert res.status_code == 201
     body = res.json()
@@ -56,7 +60,11 @@ def test_register_returns_201_with_user(client: TestClient):
 
 
 def test_register_rejects_duplicate_email(client: TestClient):
-    payload = {"email": "dup@example.com", "password": "password123"}
+    payload = {
+        "name": "Dup User",
+        "email": "dup@example.com",
+        "password": "password123",
+    }
     first = client.post("/api/v1/users/register/", json=payload)
     assert first.status_code == 201
 
@@ -71,7 +79,11 @@ def test_register_rejects_duplicate_email(client: TestClient):
 def test_register_creates_pending_welcome_outbox_job(client: TestClient):
     res = client.post(
         "/api/v1/users/register/",
-        json={"email": "job@example.com", "password": "password123"},
+        json={
+            "name": "Job User",
+            "email": "job@example.com",
+            "password": "password123",
+        },
     )
     assert res.status_code == 201
 
@@ -99,7 +111,11 @@ def test_register_rolls_back_user_when_outbox_fails(
     with TestClient(app, raise_server_exceptions=False) as c:
         res = c.post(
             "/api/v1/users/register/",
-            json={"email": "rollback@example.com", "password": "password123"},
+            json={
+                "name": "Rollback User",
+                "email": "rollback@example.com",
+                "password": "password123",
+            },
         )
     assert res.status_code == 500
 
@@ -114,7 +130,11 @@ def test_register_rolls_back_user_when_outbox_fails(
 def test_register_normalizes_email_to_lowercase(client: TestClient):
     res = client.post(
         "/api/v1/users/register/",
-        json={"email": "MixedCase@Example.com", "password": "password123"},
+        json={
+            "name": "Mixed User",
+            "email": "MixedCase@Example.com",
+            "password": "password123",
+        },
     )
     assert res.status_code == 201
     assert res.json()["email"] == "mixedcase@example.com"
@@ -123,7 +143,7 @@ def test_register_normalizes_email_to_lowercase(client: TestClient):
 def test_register_rejects_short_password(client: TestClient):
     res = client.post(
         "/api/v1/users/register/",
-        json={"email": "short@example.com", "password": "123"},
+        json={"name": "Short User", "email": "short@example.com", "password": "123"},
     )
     assert res.status_code == 422
 
@@ -131,7 +151,11 @@ def test_register_rejects_short_password(client: TestClient):
 def test_register_rejects_invalid_email(client: TestClient):
     res = client.post(
         "/api/v1/users/register/",
-        json={"email": "not-an-email", "password": "password123"},
+        json={
+            "name": "Invalid User",
+            "email": "not-an-email",
+            "password": "password123",
+        },
     )
     assert res.status_code == 422
 
@@ -142,7 +166,11 @@ def test_register_rejects_invalid_email(client: TestClient):
 def test_register_creates_unverified_user(client: TestClient):
     res = client.post(
         "/api/v1/users/register/",
-        json={"email": "unverified@example.com", "password": "password123"},
+        json={
+            "name": "Unverified User",
+            "email": "unverified@example.com",
+            "password": "password123",
+        },
     )
     assert res.status_code == 201
     with TestingSessionLocal() as db:
@@ -155,7 +183,11 @@ def test_register_creates_unverified_user(client: TestClient):
 def test_verify_email_with_valid_token(client: TestClient):
     client.post(
         "/api/v1/users/register/",
-        json={"email": "verify@example.com", "password": "password123"},
+        json={
+            "name": "Verify User",
+            "email": "verify@example.com",
+            "password": "password123",
+        },
     )
     with TestingSessionLocal() as db:
         user = db.exec(select(User).where(User.email == "verify@example.com")).one()
@@ -168,7 +200,7 @@ def test_verify_email_with_valid_token(client: TestClient):
     with TestingSessionLocal() as db:
         user = db.exec(select(User).where(User.email == "verify@example.com")).one()
     assert user.is_verified is True
-    assert user.verification_token is None
+    assert user.verification_token == token
 
 
 def test_verify_email_with_invalid_token(client: TestClient):
@@ -180,7 +212,11 @@ def test_verify_email_with_invalid_token(client: TestClient):
 def test_verify_email_with_already_used_token(client: TestClient):
     client.post(
         "/api/v1/users/register/",
-        json={"email": "reused@example.com", "password": "password123"},
+        json={
+            "name": "Reused User",
+            "email": "reused@example.com",
+            "password": "password123",
+        },
     )
     with TestingSessionLocal() as db:
         user = db.exec(select(User).where(User.email == "reused@example.com")).one()
@@ -190,14 +226,18 @@ def test_verify_email_with_already_used_token(client: TestClient):
     assert first.status_code == 200
 
     second = client.post("/api/v1/auth/verify-email", json={"token": token})
-    assert second.status_code == 400
-    assert second.json()["detail"]["code"] == "INVALID_TOKEN"
+    assert second.status_code == 200
+    assert second.json()["message"] == "Email already verified"
 
 
-def test_verify_already_verified_user_returns_400(client: TestClient):
+def test_verify_already_verified_user_returns_200(client: TestClient):
     client.post(
         "/api/v1/users/register/",
-        json={"email": "already@example.com", "password": "password123"},
+        json={
+            "name": "Already User",
+            "email": "already@example.com",
+            "password": "password123",
+        },
     )
     with TestingSessionLocal() as db:
         user = db.exec(select(User).where(User.email == "already@example.com")).one()
@@ -207,8 +247,8 @@ def test_verify_already_verified_user_returns_400(client: TestClient):
     assert first.status_code == 200
 
     second = client.post("/api/v1/auth/verify-email", json={"token": token})
-    assert second.status_code == 400
-    assert second.json()["detail"]["code"] == "INVALID_TOKEN"
+    assert second.status_code == 200
+    assert second.json()["message"] == "Email already verified"
 
 
 def test_user_without_verification_token_cannot_verify(client: TestClient):

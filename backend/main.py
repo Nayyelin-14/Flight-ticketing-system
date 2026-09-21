@@ -1,10 +1,19 @@
 from database import engine
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from routers import auth, users
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 API_V1 = "/api/v1"

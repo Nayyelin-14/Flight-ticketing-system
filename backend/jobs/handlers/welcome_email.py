@@ -23,11 +23,13 @@ class WelcomeEmailHandler:
         recipient = job.payload["recipient"]
         user_id = str(job.payload["user_id"])
         verification_token = job.payload["verification_token"]
+        name = job.payload.get("name", "")
         try:
             await send_welcome_email(
                 recipient,
                 user_id=user_id,
                 verification_token=verification_token,
+                name=name,
                 sender=self._sender,
                 settings=self._settings,
             )

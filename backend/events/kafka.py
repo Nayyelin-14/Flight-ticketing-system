@@ -1,5 +1,6 @@
 import json
 import logging
+import ssl
 from typing import Protocol
 
 from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
@@ -29,6 +30,15 @@ def _require_broker(settings: Settings) -> None:
         raise RuntimeError("KAFKA_ENABLED requires KAFKA_BOOTSTRAP_SERVERS to be set")
 
 
+def _build_ssl_context(settings: Settings) -> ssl.SSLContext:
+    """Create an SSL context, loading Aiven's CA certificate if available."""
+    ctx = ssl.create_default_context()
+    cafile = getattr(settings, "kafka_ssl_cafile", None)
+    if cafile:
+        ctx.load_verify_locations(cafile)
+    return ctx
+
+
 def build_producer(settings: Settings) -> AIOKafkaProducer:
     """Build a producer from environment config (broker-agnostic)."""
     _require_broker(settings)
@@ -38,6 +48,7 @@ def build_producer(settings: Settings) -> AIOKafkaProducer:
         sasl_mechanism=settings.kafka_sasl_mechanism,
         sasl_plain_username=settings.kafka_sasl_username or None,
         sasl_plain_password=settings.kafka_sasl_password or None,
+        ssl_context=_build_ssl_context(settings),
         key_serializer=lambda key: key.encode("utf-8"),
         value_serializer=lambda value: json.dumps(value).encode("utf-8"),
     )
@@ -60,6 +71,7 @@ def build_consumer(
         sasl_mechanism=settings.kafka_sasl_mechanism,
         sasl_plain_username=settings.kafka_sasl_username or None,
         sasl_plain_password=settings.kafka_sasl_password or None,
+        ssl_context=_build_ssl_context(settings),
         group_id=group_id,
         enable_auto_commit=False,
         auto_offset_reset="earliest",
@@ -75,6 +87,7 @@ def build_admin_client(settings: Settings) -> AIOKafkaAdminClient:
         sasl_mechanism=settings.kafka_sasl_mechanism,
         sasl_plain_username=settings.kafka_sasl_username or None,
         sasl_plain_password=settings.kafka_sasl_password or None,
+        ssl_context=_build_ssl_context(settings),
     )
 
 

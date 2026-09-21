@@ -33,6 +33,15 @@ export default function RegisterForm() {
   };
 
   if (registered) {
+    const emailDomain = email.split("@")[1];
+    const mailProviders: Record<string, string> = {
+      "gmail.com": "https://mail.google.com",
+      "outlook.com": "https://outlook.live.com",
+      "hotmail.com": "https://outlook.live.com",
+      "yahoo.com": "https://mail.yahoo.com",
+    };
+    const emailUrl = mailProviders[emailDomain] || `mailto:${email}`;
+
     return (
       <div className="flex flex-col items-center gap-4 text-center">
         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30">
@@ -62,9 +71,9 @@ export default function RegisterForm() {
           Click the link in the email to verify your account, then you can log
           in.
         </p>
-        <Button href="/login" variant="outline" className="mt-2">
-          Go to Login
-        </Button>
+        <a href={emailUrl} className="mt-2 inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm transition-all hover:bg-blue-700 active:bg-blue-800">
+          Go to Email
+        </a>
       </div>
     );
   }

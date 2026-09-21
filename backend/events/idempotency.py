@@ -2,7 +2,6 @@ import uuid
 
 from crud.outbox import SessionFactory
 from models.events import ProcessedEvent
-from sqlalchemy import insert
 
 
 def was_processed(
@@ -28,12 +27,14 @@ def mark_processed(
     """
     with session_factory() as db:
         if db.bind is not None and db.bind.dialect.name == "postgresql":
+            from sqlalchemy.dialects.postgresql import insert
+
             stmt = (
                 insert(ProcessedEvent)
                 .values(consumer_group=consumer_group, event_id=event_id)
                 .on_conflict_do_nothing()
             )
-            result = db.exe(stmt)
+            result = db.execute(stmt)
             db.commit()
             return result.rowcount == 1
 

@@ -8,6 +8,7 @@ from events.kafka import build_producer, ensure_topics, retry_topic
 
 
 async def _run_kafka(settings: Settings) -> None:
+    import jobs.handlers  # noqa: F401 — register all handlers
     from events.consumer import EventConsumer
     from events.publisher import OutboxPublisher
 

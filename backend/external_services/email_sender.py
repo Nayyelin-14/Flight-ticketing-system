@@ -44,8 +44,6 @@ class SMTPEmailSender:
         client = aiosmtplib.SMTP(hostname=self._host, port=self._port, timeout=30)
         try:
             await client.connect()
-            if self._use_tls:
-                await client.starttls()
             if self._username:
                 await client.login(self._username, self._password)
             await client.send_message(message)

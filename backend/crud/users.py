@@ -33,6 +33,7 @@ def create_user(db: Session, user_in: UserCreate) -> User:
             "recipient": user_in.email,
             "user_id": str(user.id),
             "verification_token": verification_token,
+            "name": user_in.name,
         },
     )
     db.commit()
