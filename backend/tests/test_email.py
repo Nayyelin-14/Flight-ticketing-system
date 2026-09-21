@@ -62,15 +62,21 @@ def _patch(fake: FakeSMTP, monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_render_welcome_email_contains_recipient_and_cta():
     html = render_welcome_email(
-        "Alice Bob <alice@example.com>", app_url="https://app.example.com"
+        "Alice Bob <alice@example.com>",
+        app_url="https://app.example.com",
+        verification_url="https://app.example.com/verify-email?token=abc123",
     )
     assert "alice@example.com" in html
     assert "https://app.example.com" in html
+    assert "https://app.example.com/verify-email?token=abc123" in html
+    assert "Verify Email" in html
 
 
 def test_render_welcome_email_escapes_html():
     html = render_welcome_email(
-        "<script>alert(1)</script>", app_url="https://app.example.com"
+        "<script>alert(1)</script>",
+        app_url="https://app.example.com",
+        verification_url="https://app.example.com/verify-email?token=abc",
     )
     assert "<script>" not in html
     assert "&lt;script&gt;" in html
@@ -96,6 +102,7 @@ def test_send_welcome_email_uses_injected_sender():
         send_welcome_email(
             "alice@example.com",
             user_id="user-123",
+            verification_token="test-token-abc",
             sender=sender,
             settings=settings,
         )
@@ -105,6 +112,7 @@ def test_send_welcome_email_uses_injected_sender():
     assert subject == WELCOME_SUBJECT
     assert "user-123" not in html
     assert "https://app.example.com" in html
+    assert "verify-email?token=test-token-abc" in html
 
 
 def test_smtp_send_success(monkeypatch):

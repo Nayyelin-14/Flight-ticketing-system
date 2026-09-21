@@ -1,21 +1,18 @@
 "use client";
 
-import { useAuth } from "@/components/auth-provider";
 import Button from "@/components/ui/button";
 import { Input, PasswordInput } from "@/components/ui/input";
 import { register as registerRequest } from "@/lib/auth";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function RegisterForm() {
-  const router = useRouter();
-  const { login } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [registered, setRegistered] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,15 +23,51 @@ export default function RegisterForm() {
     }
     setLoading(true);
     try {
-      const res = await registerRequest({ name, email, phone, password });
-      login(res.access_token, res.user);
-      router.push("/");
+      await registerRequest({ name, email, phone, password });
+      setRegistered(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {
       setLoading(false);
     }
   };
+
+  if (registered) {
+    return (
+      <div className="flex flex-col items-center gap-4 text-center">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30">
+          <svg
+            className="h-8 w-8 text-blue-600 dark:text-blue-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"
+            />
+          </svg>
+        </div>
+        <h2 className="text-xl font-bold">Check your email</h2>
+        <p className="text-zinc-500 dark:text-zinc-400">
+          We&apos;ve sent a verification link to{" "}
+          <span className="font-medium text-zinc-900 dark:text-zinc-100">
+            {email}
+          </span>
+          .
+        </p>
+        <p className="text-zinc-500 dark:text-zinc-400">
+          Click the link in the email to verify your account, then you can log
+          in.
+        </p>
+        <Button href="/login" variant="outline" className="mt-2">
+          Go to Login
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>

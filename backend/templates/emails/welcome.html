@@ -14,9 +14,13 @@
       <div style="padding:32px;">
         <p>Hi {{ recipient }},</p>
         <p>Thanks for creating your account. We're thrilled to have you on board.</p>
-        <p>Explore flights, manage bookings, and plan your next trip.</p>
+        <p>To get started, please verify your email address by clicking the button below:</p>
         <p style="text-align:center;margin:32px 0;">
-          <a href="{{ app_url }}" style="background-color:#2563eb;color:#ffffff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">Start exploring flights</a>
+          <a href="{{ verification_url }}" style="background-color:#2563eb;color:#ffffff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block;">Verify Email</a>
+        </p>
+        <p>Once verified, you can explore flights, manage bookings, and plan your next trip.</p>
+        <p style="text-align:center;margin:32px 0;">
+          <a href="{{ app_url }}" style="background-color:#0f172a;color:#ffffff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block;">Start exploring flights</a>
         </p>
         <p style="color:#6b7280;font-size:14px;">
           If you didn't create this account, you can safely ignore this email.

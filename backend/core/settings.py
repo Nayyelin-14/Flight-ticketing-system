@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     )
 
     app_url: str = "http://localhost:8000"
+    frontend_url: str = "http://localhost:3000"
 
     smtp_host: str | None = None
     smtp_port: int = 587

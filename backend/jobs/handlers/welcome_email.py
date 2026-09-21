@@ -22,10 +22,12 @@ class WelcomeEmailHandler:
     async def handle(self, job: OutboxJob) -> None:
         recipient = job.payload["recipient"]
         user_id = str(job.payload["user_id"])
+        verification_token = job.payload["verification_token"]
         try:
             await send_welcome_email(
                 recipient,
                 user_id=user_id,
+                verification_token=verification_token,
                 sender=self._sender,
                 settings=self._settings,
             )

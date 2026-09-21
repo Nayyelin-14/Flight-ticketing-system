@@ -82,6 +82,8 @@ def test_register_creates_pending_welcome_outbox_job(client: TestClient):
     assert job.attempts == 0
     assert job.payload["recipient"] == "job@example.com"
     assert uuid.UUID(job.payload["user_id"])
+    assert "verification_token" in job.payload
+    assert len(job.payload["verification_token"]) > 0
 
 
 def test_register_rolls_back_user_when_outbox_fails(
@@ -132,3 +134,93 @@ def test_register_rejects_invalid_email(client: TestClient):
         json={"email": "not-an-email", "password": "password123"},
     )
     assert res.status_code == 422
+
+
+# --- Email verification tests ---
+
+
+def test_register_creates_unverified_user(client: TestClient):
+    res = client.post(
+        "/users/register/",
+        json={"email": "unverified@example.com", "password": "password123"},
+    )
+    assert res.status_code == 201
+    with TestingSessionLocal() as db:
+        user = db.exec(select(User).where(User.email == "unverified@example.com")).one()
+    assert user.is_verified is False
+    assert user.verification_token is not None
+    assert len(user.verification_token) > 0
+
+
+def test_verify_email_with_valid_token(client: TestClient):
+    client.post(
+        "/users/register/",
+        json={"email": "verify@example.com", "password": "password123"},
+    )
+    with TestingSessionLocal() as db:
+        user = db.exec(select(User).where(User.email == "verify@example.com")).one()
+        token = user.verification_token
+
+    res = client.post("/auth/verify-email", json={"token": token})
+    assert res.status_code == 200
+    assert res.json()["message"] == "Email verified successfully"
+
+    with TestingSessionLocal() as db:
+        user = db.exec(select(User).where(User.email == "verify@example.com")).one()
+    assert user.is_verified is True
+    assert user.verification_token is None
+
+
+def test_verify_email_with_invalid_token(client: TestClient):
+    res = client.post("/auth/verify-email", json={"token": "nonexistent-token"})
+    assert res.status_code == 400
+    assert res.json()["detail"]["code"] == "INVALID_TOKEN"
+
+
+def test_verify_email_with_already_used_token(client: TestClient):
+    client.post(
+        "/users/register/",
+        json={"email": "reused@example.com", "password": "password123"},
+    )
+    with TestingSessionLocal() as db:
+        user = db.exec(select(User).where(User.email == "reused@example.com")).one()
+        token = user.verification_token
+
+    first = client.post("/auth/verify-email", json={"token": token})
+    assert first.status_code == 200
+
+    second = client.post("/auth/verify-email", json={"token": token})
+    assert second.status_code == 400
+    assert second.json()["detail"]["code"] == "INVALID_TOKEN"
+
+
+def test_verify_already_verified_user_returns_400(client: TestClient):
+    client.post(
+        "/users/register/",
+        json={"email": "already@example.com", "password": "password123"},
+    )
+    with TestingSessionLocal() as db:
+        user = db.exec(select(User).where(User.email == "already@example.com")).one()
+        token = user.verification_token
+
+    first = client.post("/auth/verify-email", json={"token": token})
+    assert first.status_code == 200
+
+    second = client.post("/auth/verify-email", json={"token": token})
+    assert second.status_code == 400
+    assert second.json()["detail"]["code"] == "INVALID_TOKEN"
+
+
+def test_user_without_verification_token_cannot_verify(client: TestClient):
+    with TestingSessionLocal() as db:
+        user = User(
+            email="notoken@example.com",
+            password_hash="fakehash",
+            is_verified=False,
+            verification_token=None,
+        )
+        db.add(user)
+        db.commit()
+
+    res = client.post("/auth/verify-email", json={"token": "some-token"})
+    assert res.status_code == 400

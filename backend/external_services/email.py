@@ -14,19 +14,29 @@ _env = Environment(
 )
 
 
-def render_welcome_email(recipient: str, *, app_url: str) -> str:
+def render_welcome_email(recipient: str, *, app_url: str, verification_url: str) -> str:
     template = _env.get_template("welcome.html")
-    return template.render(recipient=recipient, app_url=app_url)
+    return template.render(
+        recipient=recipient, app_url=app_url, verification_url=verification_url
+    )
 
 
 async def send_welcome_email(
     recipient: str,
     *,
     user_id: str,
+    verification_token: str,
     sender: EmailSender | None = None,
     settings: Settings | None = None,
 ) -> None:
     settings = settings or get_settings()
     sender = sender or get_email_sender(settings)
-    html = render_welcome_email(recipient, app_url=settings.app_url)
+    verification_url = (
+        f"{settings.frontend_url}/verify-email?token={verification_token}"
+    )
+    html = render_welcome_email(
+        recipient,
+        app_url=settings.app_url,
+        verification_url=verification_url,
+    )
     await sender.send(recipient=recipient, subject=WELCOME_SUBJECT, html=html)
