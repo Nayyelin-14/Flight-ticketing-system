@@ -1,4 +1,7 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+export const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+const API_URL = `${API_BASE}/api/v1`;
 
 interface RequestOptions extends RequestInit {
   token?: string;
@@ -19,7 +22,7 @@ async function request<T>(
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${API_BASE}${endpoint}`, {
+  const res = await fetch(`${API_URL}${endpoint}`, {
     ...fetchOptions,
     headers,
   });

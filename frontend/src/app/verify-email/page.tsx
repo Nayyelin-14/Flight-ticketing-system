@@ -1,11 +1,10 @@
 "use client";
 
+import { API_BASE } from "@/lib/api";
 import Button from "@/components/ui/button";
 import Spinner from "@/components/ui/spinner";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 type VerifyState = "loading" | "success" | "error";
 
@@ -23,7 +22,7 @@ function VerifyEmailContent() {
 
     async function verify() {
       try {
-        const res = await fetch(`${API_BASE}/auth/verify-email`, {
+        const res = await fetch(`${API_BASE}/api/v1/auth/verify-email`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ token }),

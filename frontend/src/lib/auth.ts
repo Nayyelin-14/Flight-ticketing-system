@@ -1,4 +1,4 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+import { API_BASE } from "./api";
 
 interface LoginPayload {
   email: string;
@@ -24,7 +24,7 @@ interface AuthResponse {
 }
 
 export async function login(payload: LoginPayload): Promise<AuthResponse> {
-  const res = await fetch(`${API_BASE}/auth/login`, {
+  const res = await fetch(`${API_BASE}/api/v1/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -39,7 +39,7 @@ export async function login(payload: LoginPayload): Promise<AuthResponse> {
 }
 
 export async function register(payload: RegisterPayload): Promise<AuthResponse> {
-  const res = await fetch(`${API_BASE}/auth/register`, {
+  const res = await fetch(`${API_BASE}/api/v1/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -54,7 +54,7 @@ export async function register(payload: RegisterPayload): Promise<AuthResponse> 
 }
 
 export async function refreshToken(refreshToken: string): Promise<AuthResponse> {
-  const res = await fetch(`${API_BASE}/auth/refresh`, {
+  const res = await fetch(`${API_BASE}/api/v1/auth/refresh`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ refresh_token: refreshToken }),

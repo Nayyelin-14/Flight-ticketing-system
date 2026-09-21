@@ -43,7 +43,7 @@ def client():
 
 def test_register_returns_201_with_user(client: TestClient):
     res = client.post(
-        "/users/register/",
+        "/api/v1/users/register/",
         json={"email": "user@example.com", "password": "password123"},
     )
     assert res.status_code == 201
@@ -57,10 +57,10 @@ def test_register_returns_201_with_user(client: TestClient):
 
 def test_register_rejects_duplicate_email(client: TestClient):
     payload = {"email": "dup@example.com", "password": "password123"}
-    first = client.post("/users/register/", json=payload)
+    first = client.post("/api/v1/users/register/", json=payload)
     assert first.status_code == 201
 
-    second = client.post("/users/register/", json=payload)
+    second = client.post("/api/v1/users/register/", json=payload)
     assert second.status_code == 409
 
     with TestingSessionLocal() as db:
@@ -70,7 +70,7 @@ def test_register_rejects_duplicate_email(client: TestClient):
 
 def test_register_creates_pending_welcome_outbox_job(client: TestClient):
     res = client.post(
-        "/users/register/",
+        "/api/v1/users/register/",
         json={"email": "job@example.com", "password": "password123"},
     )
     assert res.status_code == 201
@@ -98,7 +98,7 @@ def test_register_rolls_back_user_when_outbox_fails(
 
     with TestClient(app, raise_server_exceptions=False) as c:
         res = c.post(
-            "/users/register/",
+            "/api/v1/users/register/",
             json={"email": "rollback@example.com", "password": "password123"},
         )
     assert res.status_code == 500
@@ -113,7 +113,7 @@ def test_register_rolls_back_user_when_outbox_fails(
 
 def test_register_normalizes_email_to_lowercase(client: TestClient):
     res = client.post(
-        "/users/register/",
+        "/api/v1/users/register/",
         json={"email": "MixedCase@Example.com", "password": "password123"},
     )
     assert res.status_code == 201
@@ -122,7 +122,7 @@ def test_register_normalizes_email_to_lowercase(client: TestClient):
 
 def test_register_rejects_short_password(client: TestClient):
     res = client.post(
-        "/users/register/",
+        "/api/v1/users/register/",
         json={"email": "short@example.com", "password": "123"},
     )
     assert res.status_code == 422
@@ -130,7 +130,7 @@ def test_register_rejects_short_password(client: TestClient):
 
 def test_register_rejects_invalid_email(client: TestClient):
     res = client.post(
-        "/users/register/",
+        "/api/v1/users/register/",
         json={"email": "not-an-email", "password": "password123"},
     )
     assert res.status_code == 422
@@ -141,7 +141,7 @@ def test_register_rejects_invalid_email(client: TestClient):
 
 def test_register_creates_unverified_user(client: TestClient):
     res = client.post(
-        "/users/register/",
+        "/api/v1/users/register/",
         json={"email": "unverified@example.com", "password": "password123"},
     )
     assert res.status_code == 201
@@ -154,14 +154,14 @@ def test_register_creates_unverified_user(client: TestClient):
 
 def test_verify_email_with_valid_token(client: TestClient):
     client.post(
-        "/users/register/",
+        "/api/v1/users/register/",
         json={"email": "verify@example.com", "password": "password123"},
     )
     with TestingSessionLocal() as db:
         user = db.exec(select(User).where(User.email == "verify@example.com")).one()
         token = user.verification_token
 
-    res = client.post("/auth/verify-email", json={"token": token})
+    res = client.post("/api/v1/auth/verify-email", json={"token": token})
     assert res.status_code == 200
     assert res.json()["message"] == "Email verified successfully"
 
@@ -172,41 +172,41 @@ def test_verify_email_with_valid_token(client: TestClient):
 
 
 def test_verify_email_with_invalid_token(client: TestClient):
-    res = client.post("/auth/verify-email", json={"token": "nonexistent-token"})
+    res = client.post("/api/v1/auth/verify-email", json={"token": "nonexistent-token"})
     assert res.status_code == 400
     assert res.json()["detail"]["code"] == "INVALID_TOKEN"
 
 
 def test_verify_email_with_already_used_token(client: TestClient):
     client.post(
-        "/users/register/",
+        "/api/v1/users/register/",
         json={"email": "reused@example.com", "password": "password123"},
     )
     with TestingSessionLocal() as db:
         user = db.exec(select(User).where(User.email == "reused@example.com")).one()
         token = user.verification_token
 
-    first = client.post("/auth/verify-email", json={"token": token})
+    first = client.post("/api/v1/auth/verify-email", json={"token": token})
     assert first.status_code == 200
 
-    second = client.post("/auth/verify-email", json={"token": token})
+    second = client.post("/api/v1/auth/verify-email", json={"token": token})
     assert second.status_code == 400
     assert second.json()["detail"]["code"] == "INVALID_TOKEN"
 
 
 def test_verify_already_verified_user_returns_400(client: TestClient):
     client.post(
-        "/users/register/",
+        "/api/v1/users/register/",
         json={"email": "already@example.com", "password": "password123"},
     )
     with TestingSessionLocal() as db:
         user = db.exec(select(User).where(User.email == "already@example.com")).one()
         token = user.verification_token
 
-    first = client.post("/auth/verify-email", json={"token": token})
+    first = client.post("/api/v1/auth/verify-email", json={"token": token})
     assert first.status_code == 200
 
-    second = client.post("/auth/verify-email", json={"token": token})
+    second = client.post("/api/v1/auth/verify-email", json={"token": token})
     assert second.status_code == 400
     assert second.json()["detail"]["code"] == "INVALID_TOKEN"
 
@@ -222,5 +222,5 @@ def test_user_without_verification_token_cannot_verify(client: TestClient):
         db.add(user)
         db.commit()
 
-    res = client.post("/auth/verify-email", json={"token": "some-token"})
+    res = client.post("/api/v1/auth/verify-email", json={"token": "some-token"})
     assert res.status_code == 400

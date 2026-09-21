@@ -15,6 +15,13 @@ class VerifyEmailRequest(BaseModel):
     token: str
 
 
+@router.post("/register", status_code=status.HTTP_201_CREATED)
+def register(body: dict, db: DbSession) -> dict:
+    from routers.users import register as users_register
+
+    return users_register(body, db)
+
+
 @router.post("/verify-email", status_code=status.HTTP_200_OK)
 def verify_email(body: VerifyEmailRequest, db: DbSession) -> dict:
     user = get_user_by_verification_token(db, body.token)

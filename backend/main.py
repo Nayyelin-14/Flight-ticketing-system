@@ -7,8 +7,10 @@ from sqlalchemy.exc import SQLAlchemyError
 app = FastAPI()
 
 
-app.include_router(users.router)
-app.include_router(auth.router)
+API_V1 = "/api/v1"
+
+app.include_router(users.router, prefix=API_V1)
+app.include_router(auth.router, prefix=API_V1)
 
 
 @app.get("/")
