@@ -2,17 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-
-const AIRPORTS = [
-  { code: "DEL", name: "Delhi" },
-  { code: "BOM", name: "Mumbai" },
-  { code: "BLR", name: "Bangalore" },
-  { code: "MAA", name: "Chennai" },
-  { code: "CCU", name: "Kolkata" },
-  { code: "HYD", name: "Hyderabad" },
-  { code: "GOI", name: "Goa" },
-  { code: "PNQ", name: "Pune" },
-];
+import Button from "@/components/ui/button";
+import { AIRPORTS } from "@/lib/airports";
 
 export default function SearchForm() {
   const router = useRouter();
@@ -32,8 +23,14 @@ export default function SearchForm() {
     router.push(`/flights?${params.toString()}`);
   };
 
+  const selectClasses =
+    "rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm transition-colors hover:border-zinc-400 focus:border-blue-600 focus:outline-2 focus:outline-blue-600 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:border-zinc-600";
+
   return (
-    <form onSubmit={handleSubmit} className="w-full max-w-4xl rounded-2xl border border-zinc-200 bg-white p-6 shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
+    <form
+      onSubmit={handleSubmit}
+      className="w-full max-w-4xl rounded-2xl border border-zinc-200 bg-white p-6 shadow-lg dark:border-zinc-800 dark:bg-zinc-900"
+    >
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-medium uppercase tracking-wider text-zinc-500">From</label>
@@ -41,7 +38,8 @@ export default function SearchForm() {
             value={origin}
             onChange={(e) => setOrigin(e.target.value)}
             required
-            className="rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm dark:border-zinc-700 dark:bg-zinc-800"
+            aria-label="Origin city"
+            className={selectClasses}
           >
             <option value="">Select city</option>
             {AIRPORTS.map((a) => (
@@ -56,7 +54,8 @@ export default function SearchForm() {
             value={destination}
             onChange={(e) => setDestination(e.target.value)}
             required
-            className="rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm dark:border-zinc-700 dark:bg-zinc-800"
+            aria-label="Destination city"
+            className={selectClasses}
           >
             <option value="">Select city</option>
             {AIRPORTS.map((a) => (
@@ -73,7 +72,7 @@ export default function SearchForm() {
             onChange={(e) => setDate(e.target.value)}
             required
             min={new Date().toISOString().split("T")[0]}
-            className="rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm dark:border-zinc-700 dark:bg-zinc-800"
+            className={selectClasses}
           />
         </div>
 
@@ -85,18 +84,15 @@ export default function SearchForm() {
             onChange={(e) => setPassengers(Number(e.target.value))}
             min={1}
             max={9}
-            className="rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm dark:border-zinc-700 dark:bg-zinc-800"
+            className={selectClasses}
           />
         </div>
 
         <div className="flex flex-col gap-1.5">
           <label className="invisible text-xs">Search</label>
-          <button
-            type="submit"
-            className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
-          >
+          <Button type="submit" size="md" fullWidth className="h-[42px]">
             Search Flights
-          </button>
+          </Button>
         </div>
       </div>
     </form>
