@@ -1,10 +1,13 @@
 import asyncio
 import logging
+import signal
 
 from core.settings import Settings, get_settings
 from database import SessionLocal
 from events.domains import all_domain_topics
 from events.kafka import build_producer, ensure_topics, retry_topic
+
+logger = logging.getLogger(__name__)
 
 
 async def _run_kafka(settings: Settings) -> None:
@@ -33,9 +36,30 @@ async def _run_kafka(settings: Settings) -> None:
             producer=producer,
             is_retry=True,
         )
-        await asyncio.gather(publisher.run(), main_consumer.run(), retry_consumer.run())
+
+        loop = asyncio.get_running_loop()
+        stop = loop.create_future()
+
+        def _signal_handler() -> None:
+            if not stop.done():
+                stop.set_result(None)
+
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            loop.add_signal_handler(sig, _signal_handler)
+
+        tasks = [
+            asyncio.create_task(publisher.run()),
+            asyncio.create_task(main_consumer.run()),
+            asyncio.create_task(retry_consumer.run()),
+        ]
+        await stop
+        logger.info("Shutting down gracefully...")
     finally:
+        for t in tasks:
+            t.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
         await producer.stop()
+        logger.info("Worker stopped.")
 
 
 async def main() -> None:
