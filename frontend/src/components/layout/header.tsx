@@ -8,20 +8,26 @@ import MobileMenu from "@/components/layout/mobile-menu";
 import ThemeToggle from "@/components/layout/theme-toggle";
 import { AUTH_LINKS, PUBLIC_LINKS } from "@/lib/nav";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 
 export default function Header() {
   const { user, isAuthenticated, logout } = useAuth();
+  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const searchRef = useRef<SiteSearchHandle>(null);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setLoggingOut(true);
-    logout();
-    setConfirmLogout(false);
-    setLoggingOut(false);
+    try {
+      await logout();
+      router.replace("/login");
+    } finally {
+      setConfirmLogout(false);
+      setLoggingOut(false);
+    }
   };
 
   return (

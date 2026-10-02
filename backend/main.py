@@ -1,24 +1,29 @@
-from database import engine
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import auth, users
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
+from core.settings import get_settings
+from database import engine
+from routers import auth
+from utils.security import install_security
+
 app = FastAPI()
+
+_settings = get_settings()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=_settings.cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
 )
+install_security(app, _settings)
 
 
-API_V1 = "/api/v1"
+API_V1 = _settings.api_v1_prefix
 
-app.include_router(users.router, prefix=API_V1)
 app.include_router(auth.router, prefix=API_V1)
 
 

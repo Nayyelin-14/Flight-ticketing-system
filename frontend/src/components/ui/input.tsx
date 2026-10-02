@@ -33,47 +33,44 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
   }
 );
 
-export function PasswordInput({
-  label = "Password",
-  hint,
-  className,
-  id,
-  ...props
-}: Omit<InputProps, "type">) {
-  const [visible, setVisible] = useState(false);
-  const generatedId = useId().replace(/:/g, "");
-  const inputId = id ?? `password-${generatedId}`;
+export const PasswordInput = forwardRef<HTMLInputElement, Omit<InputProps, "type">>(
+  function PasswordInput({ label = "Password", hint, className, id, ...props }, ref) {
+    const [visible, setVisible] = useState(false);
+    const generatedId = useId().replace(/:/g, "");
+    const inputId = id ?? `password-${generatedId}`;
 
-  return (
-    <div className="flex flex-col gap-1.5">
-      {label ? (
-        <label
-          htmlFor={inputId}
-          className="text-xs font-medium uppercase tracking-wider text-zinc-500"
-        >
-          {label}
-        </label>
-      ) : null}
-      <div className="relative">
-        <input
-          id={inputId}
-          type={visible ? "text" : "password"}
-          className={cn(INPUT_CLASSES, "pr-11", className)}
-          {...props}
-        />
-        <button
-          type="button"
-          onClick={() => setVisible((v) => !v)}
-          aria-label={visible ? "Hide password" : "Show password"}
-          title={visible ? "Hide password" : "Show password"}
-          className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-zinc-400 transition-colors hover:text-zinc-700 dark:hover:text-zinc-200"
-        >
-          <Icon name={visible ? "eye-off" : "eye"} size={18} />
-        </button>
+    return (
+      <div className="flex flex-col gap-1.5">
+        {label ? (
+          <label
+            htmlFor={inputId}
+            className="text-xs font-medium uppercase tracking-wider text-zinc-500"
+          >
+            {label}
+          </label>
+        ) : null}
+        <div className="relative">
+          <input
+            ref={ref}
+            id={inputId}
+            type={visible ? "text" : "password"}
+            className={cn(INPUT_CLASSES, "pr-11", className)}
+            {...props}
+          />
+          <button
+            type="button"
+            onClick={() => setVisible((v) => !v)}
+            aria-label={visible ? "Hide password" : "Show password"}
+            title={visible ? "Hide password" : "Show password"}
+            className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-zinc-400 transition-colors hover:text-zinc-700 dark:hover:text-zinc-200"
+          >
+            <Icon name={visible ? "eye-off" : "eye"} size={18} />
+          </button>
+        </div>
+        {hint ? <p className="text-xs text-zinc-500">{hint}</p> : null}
       </div>
-      {hint ? <p className="text-xs text-zinc-500">{hint}</p> : null}
-    </div>
-  );
-}
+    );
+  },
+);
 
 export default Input;

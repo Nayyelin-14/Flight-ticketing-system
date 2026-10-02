@@ -1,66 +1,63 @@
-import { API_BASE } from "./api";
+import api, { API_BASE } from "./api";
 
-interface LoginPayload {
+export interface AuthUser {
+  id: string;
+  email: string;
+  name: string;
+}
+
+export interface LoginPayload {
   email: string;
   password: string;
 }
 
-interface RegisterPayload {
+export interface RegisterPayload {
   name: string;
   email: string;
-  phone: string;
   password: string;
 }
 
-interface AuthResponse {
-  access_token: string;
-  refresh_token: string;
-  expires_in: number;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-  };
+interface LoginResponse {
+  user: AuthUser;
 }
 
-export async function login(payload: LoginPayload): Promise<AuthResponse> {
-  const res = await fetch(`${API_BASE}/api/v1/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+interface MeResponse {
+  user: AuthUser;
+}
+
+/** Normalize like the backend: trim + lowercase. */
+export function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
+export async function login(payload: LoginPayload): Promise<AuthUser> {
+  const res = await api.postNoRetry<LoginResponse>("/auth/login", {
+    email: normalizeEmail(payload.email),
+    password: payload.password,
   });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: "Login failed" }));
-    throw new Error(err.detail);
-  }
-
-  return res.json();
+  return res.user;
 }
 
-export async function register(payload: RegisterPayload): Promise<AuthResponse> {
-  const res = await fetch(`${API_BASE}/api/v1/auth/register`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+export async function fetchMe(): Promise<AuthUser> {
+  const res = await api.get<MeResponse>("/auth/me");
+  return res.user;
+}
+
+export async function logoutRequest(): Promise<void> {
+  // Always clear local state in the caller even if this fails.
+  await api.postNoRetry<void>("/auth/logout");
+}
+
+export async function register(payload: RegisterPayload): Promise<unknown> {
+  return api.postNoRetry("/auth/register", {
+    name: payload.name,
+    email: normalizeEmail(payload.email),
+    password: payload.password,
   });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: "Registration failed" }));
-    throw new Error(err.detail);
-  }
-
-  return res.json();
 }
 
-export async function refreshToken(refreshToken: string): Promise<AuthResponse> {
-  const res = await fetch(`${API_BASE}/api/v1/auth/refresh`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ refresh_token: refreshToken }),
-  });
-
-  if (!res.ok) throw new Error("Token refresh failed");
-
-  return res.json();
+export async function verifyEmail(token: string): Promise<{ message: string }> {
+  return api.postNoRetry<{ message: string }>("/auth/verify-email", { token });
 }
+
+export { API_BASE };

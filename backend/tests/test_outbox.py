@@ -3,12 +3,13 @@ import threading
 from datetime import UTC, datetime, timedelta
 
 import pytest
-from crud import outbox as outbox_crud
-from database import Base
-from models.outbox import JobStatus, JobType, OutboxJob
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlmodel import Session, update
+
+from crud import outbox as outbox_crud
+from database import Base
+from models.outbox import JobStatus, JobType, OutboxJob
 
 
 def _seed_job(

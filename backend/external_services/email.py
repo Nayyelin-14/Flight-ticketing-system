@@ -1,8 +1,9 @@
 from pathlib import Path
 
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+
 from core.settings import Settings, get_settings
 from external_services.email_sender import EmailSender, get_email_sender
-from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 WELCOME_SUBJECT = "Welcome to SKYFLARE"
 

@@ -3,6 +3,7 @@ from email.message import EmailMessage
 from typing import Protocol
 
 import aiosmtplib
+
 from core.settings import Settings
 
 

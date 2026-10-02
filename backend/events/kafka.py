@@ -7,6 +7,7 @@ from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
 from aiokafka.admin import AIOKafkaAdminClient
 from aiokafka.admin.new_topic import NewTopic
 from aiokafka.errors import TopicAlreadyExistsError
+
 from core.settings import Settings
 from events.domains import all_domain_topics
 

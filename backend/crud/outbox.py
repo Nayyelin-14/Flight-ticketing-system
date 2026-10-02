@@ -2,10 +2,11 @@ import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 
-from database import SessionLocal
-from models.outbox import JobStatus, OutboxJob
 from sqlalchemy import update
 from sqlmodel import Session, select
+
+from database import SessionLocal
+from models.outbox import JobStatus, OutboxJob
 
 SessionFactory = Callable[[], Session]
 
