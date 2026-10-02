@@ -1,12 +1,15 @@
 from logging.config import fileConfig
 
+from sqlalchemy import engine_from_config, pool
+
 from alembic import context
 from database import DATABASE_URL, Base
 from models import (
     events,  # noqa: F401
     outbox,  # noqa: F401
+    refresh_sessions,  # noqa: F401
+    users,  # noqa: F401
 )
-from sqlalchemy import engine_from_config, pool
 
 config = context.config
 

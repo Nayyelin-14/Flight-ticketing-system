@@ -1,10 +1,37 @@
 import pytest
-from core.settings import Settings
-from database import Base
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 from sqlmodel import Session
+
+from core.settings import Settings, get_settings
+from database import Base
+from utils import rate_limit
+
+
+@pytest.fixture(autouse=True)
+def _reset_rate_limit():
+    rate_limit.reset()
+    yield
+    rate_limit.reset()
+
+
+@pytest.fixture(autouse=True)
+def _test_settings(monkeypatch: pytest.MonkeyPatch):
+    """Cookie Secure off so TestClient (http) round-trips cookies; fresh settings cache."""
+    monkeypatch.setenv("COOKIE_SECURE", "false")
+    monkeypatch.setenv(
+        "JWT_SECRET", "test-secret-which-is-long-enough-for-hmac-sha256-signing"
+    )
+    monkeypatch.setenv("LOGIN_RATE_MAX_ATTEMPTS", "5")
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()
+
+
+@pytest.fixture()
+def settings() -> Settings:
+    return get_settings()
 
 
 @pytest.fixture()
@@ -23,12 +50,20 @@ def session_factory() -> sessionmaker[Session]:
 
 
 @pytest.fixture()
-def settings() -> Settings:
-    return Settings(
-        email_max_attempts=5,
-        email_retry_base_delay=1,
-        email_max_retry_delay=10,
-        email_max_concurrency=4,
-        email_batch_size=100,
-        email_poll_interval=0.01,
-    )
+def client(session_factory, monkeypatch: pytest.MonkeyPatch):
+    from dependencies import get_db
+    from main import app
+
+    def _override_db():
+        db = session_factory()
+        try:
+            yield db
+        finally:
+            db.close()
+
+    app.dependency_overrides[get_db] = _override_db
+    from fastapi.testclient import TestClient
+
+    with TestClient(app, base_url="http://testserver") as c:
+        yield c
+    app.dependency_overrides.clear()

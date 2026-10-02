@@ -13,12 +13,19 @@ class UserCreate(SQLModel):
     @field_validator("email")
     @classmethod
     def normalize_email(cls, value: str) -> str:
-        return value.lower()
+        return value.strip().lower()
 
 
 class UserResponse(SQLModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
+    name: str
     email: EmailStr
     created_at: datetime
+
+
+class UserSummary(SQLModel):
+    id: uuid.UUID
+    name: str
+    email: EmailStr

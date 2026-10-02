@@ -2,12 +2,13 @@ import asyncio
 import threading
 from datetime import UTC, datetime, timedelta
 
+from sqlmodel import update
+
 from crud import outbox as outbox_crud
 from jobs.base import JobPermanentError, JobRetryError
 from jobs.registry import register_handler
 from jobs.worker import process_jobs_once
 from models.outbox import JobStatus, OutboxJob
-from sqlmodel import update
 
 COMPLETED_IDS: list[str] = []
 PERMANENT_RAISED_IDS: list[str] = []

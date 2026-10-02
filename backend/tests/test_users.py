@@ -1,16 +1,17 @@
 import uuid
 
 import pytest
-from database import Base
-from dependencies import get_db
 from fastapi.testclient import TestClient
-from main import app
-from models.outbox import JobStatus, JobType, OutboxJob
-from models.users import User
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, select
+
+from database import Base
+from dependencies import get_db
+from main import app
+from models.outbox import JobStatus, JobType, OutboxJob
+from models.users import User
 
 engine = create_engine(
     "sqlite://",
@@ -43,7 +44,7 @@ def client():
 
 def test_register_returns_201_with_user(client: TestClient):
     res = client.post(
-        "/api/v1/users/register/",
+        "/api/v1/auth/register",
         json={
             "name": "Test User",
             "email": "user@example.com",
@@ -65,10 +66,10 @@ def test_register_rejects_duplicate_email(client: TestClient):
         "email": "dup@example.com",
         "password": "password123",
     }
-    first = client.post("/api/v1/users/register/", json=payload)
+    first = client.post("/api/v1/auth/register", json=payload)
     assert first.status_code == 201
 
-    second = client.post("/api/v1/users/register/", json=payload)
+    second = client.post("/api/v1/auth/register", json=payload)
     assert second.status_code == 409
 
     with TestingSessionLocal() as db:
@@ -78,7 +79,7 @@ def test_register_rejects_duplicate_email(client: TestClient):
 
 def test_register_creates_pending_welcome_outbox_job(client: TestClient):
     res = client.post(
-        "/api/v1/users/register/",
+        "/api/v1/auth/register",
         json={
             "name": "Job User",
             "email": "job@example.com",
@@ -110,7 +111,7 @@ def test_register_rolls_back_user_when_outbox_fails(
 
     with TestClient(app, raise_server_exceptions=False) as c:
         res = c.post(
-            "/api/v1/users/register/",
+            "/api/v1/auth/register",
             json={
                 "name": "Rollback User",
                 "email": "rollback@example.com",
@@ -129,7 +130,7 @@ def test_register_rolls_back_user_when_outbox_fails(
 
 def test_register_normalizes_email_to_lowercase(client: TestClient):
     res = client.post(
-        "/api/v1/users/register/",
+        "/api/v1/auth/register",
         json={
             "name": "Mixed User",
             "email": "MixedCase@Example.com",
@@ -142,7 +143,7 @@ def test_register_normalizes_email_to_lowercase(client: TestClient):
 
 def test_register_rejects_short_password(client: TestClient):
     res = client.post(
-        "/api/v1/users/register/",
+        "/api/v1/auth/register",
         json={"name": "Short User", "email": "short@example.com", "password": "123"},
     )
     assert res.status_code == 422
@@ -150,7 +151,7 @@ def test_register_rejects_short_password(client: TestClient):
 
 def test_register_rejects_invalid_email(client: TestClient):
     res = client.post(
-        "/api/v1/users/register/",
+        "/api/v1/auth/register",
         json={
             "name": "Invalid User",
             "email": "not-an-email",
@@ -165,7 +166,7 @@ def test_register_rejects_invalid_email(client: TestClient):
 
 def test_register_creates_unverified_user(client: TestClient):
     res = client.post(
-        "/api/v1/users/register/",
+        "/api/v1/auth/register",
         json={
             "name": "Unverified User",
             "email": "unverified@example.com",
@@ -182,7 +183,7 @@ def test_register_creates_unverified_user(client: TestClient):
 
 def test_verify_email_with_valid_token(client: TestClient):
     client.post(
-        "/api/v1/users/register/",
+        "/api/v1/auth/register",
         json={
             "name": "Verify User",
             "email": "verify@example.com",
@@ -211,7 +212,7 @@ def test_verify_email_with_invalid_token(client: TestClient):
 
 def test_verify_email_with_already_used_token(client: TestClient):
     client.post(
-        "/api/v1/users/register/",
+        "/api/v1/auth/register",
         json={
             "name": "Reused User",
             "email": "reused@example.com",
@@ -232,7 +233,7 @@ def test_verify_email_with_already_used_token(client: TestClient):
 
 def test_verify_already_verified_user_returns_200(client: TestClient):
     client.post(
-        "/api/v1/users/register/",
+        "/api/v1/auth/register",
         json={
             "name": "Already User",
             "email": "already@example.com",

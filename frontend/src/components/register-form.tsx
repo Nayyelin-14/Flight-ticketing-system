@@ -8,7 +8,6 @@ import { useState } from "react";
 export default function RegisterForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -23,7 +22,7 @@ export default function RegisterForm() {
     }
     setLoading(true);
     try {
-      await registerRequest({ name, email, phone, password });
+      await registerRequest({ name, email, password });
       setRegistered(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
@@ -97,15 +96,6 @@ export default function RegisterForm() {
         onChange={(e) => setEmail(e.target.value)}
         required
         autoComplete="email"
-      />
-      <Input
-        type="tel"
-        label="Phone"
-        placeholder="+91 98765 43210"
-        value={phone}
-        onChange={(e) => setPhone(e.target.value)}
-        required
-        autoComplete="tel"
       />
       <PasswordInput
         placeholder="At least 8 characters"

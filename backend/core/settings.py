@@ -12,6 +12,23 @@ class Settings(BaseSettings):
 
     app_url: str = "http://localhost:8000"
     frontend_url: str = "http://localhost:3000"
+    api_v1_prefix: str = "/api/v1"
+    allowed_origins: str = "http://localhost:3000"
+
+    jwt_secret: str = "dev-only-change-me"
+    jwt_algorithm: str = "HS256"
+    jwt_issuer: str = "skyflare"
+    jwt_audience: str = "skyflare-api"
+    access_token_ttl: int = 900
+    refresh_token_ttl: int = 604800
+
+    cookie_secure: bool = True
+    cookie_samesite: str = "lax"
+    access_cookie_name: str = "access_token"
+    refresh_cookie_name: str = "refresh_token"
+
+    login_rate_max_attempts: int = 5
+    login_rate_window_seconds: int = 300
 
     smtp_host: str | None = None
     smtp_port: int = 587
@@ -62,6 +79,18 @@ class Settings(BaseSettings):
     @property
     def kafka_broker_configured(self) -> bool:
         return bool(self.kafka_bootstrap_servers)
+
+    @property
+    def cors_origins(self) -> list[str]:
+        return [
+            origin.strip()
+            for origin in self.allowed_origins.split(",")
+            if origin.strip()
+        ]
+
+    @property
+    def refresh_cookie_path(self) -> str:
+        return f"{self.api_v1_prefix}/auth"
 
 
 @lru_cache

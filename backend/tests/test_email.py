@@ -2,6 +2,7 @@ import asyncio
 
 import aiosmtplib
 import pytest
+
 from core.settings import Settings
 from external_services import email_sender as email_sender_module
 from external_services.email import (

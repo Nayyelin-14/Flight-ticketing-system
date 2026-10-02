@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
 import pytest
+
 from core.settings import Settings
 from crud import outbox as outbox_crud
 from events import (
@@ -255,8 +256,9 @@ def test_publisher_republishes_stale_processing_job(
 ) -> None:
     from datetime import timedelta
 
-    from models.outbox import OutboxJob
     from sqlmodel import update
+
+    from models.outbox import OutboxJob
 
     job_id = _seed_job(session_factory, "EVT_PUBLISH")
     with session_factory() as db:

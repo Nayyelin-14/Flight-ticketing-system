@@ -6,6 +6,7 @@ from typing import Any, Protocol
 
 from aiokafka import AIOKafkaConsumer
 from aiokafka.structs import OffsetAndMetadata, TopicPartition
+
 from core.settings import Settings
 from crud.outbox import SessionFactory
 from database import SessionLocal
